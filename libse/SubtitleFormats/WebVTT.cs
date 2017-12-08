@@ -48,6 +48,7 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
             if (p.Text.StartsWith("{\\a", StringComparison.Ordinal))
             {
                 string position = null; // horizontal
+                string align = null; // aligment
                 if (p.Text.StartsWith("{\\an1}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an4}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an7}", StringComparison.Ordinal)) // advanced sub station alpha
                 {
                     position = "20%"; //left
@@ -56,6 +57,12 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
                 {
                     position = "80%"; //right
                 }
+                else if (p.Text.StartsWith("{\\an2}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an5}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an8}", StringComparison.Ordinal)) // advanced sub station alpha
+                {
+                    position = "50%"; //middle
+                    align = "middle";
+                }
+
 
                 string line = null;
                 if (p.Text.StartsWith("{\\an7}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an8}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an9}", StringComparison.Ordinal)) // advanced sub station alpha
@@ -66,10 +73,29 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
                 {
                     line = "50%"; //middle
                 }
+                else if (p.Text.StartsWith("{\\an1}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an2}", StringComparison.Ordinal) || p.Text.StartsWith("{\\an3}", StringComparison.Ordinal)) // advanced sub station alpha
+                {
+                    if (p.NumberOfLines == 1)
+                    {
+                        line = "85%"; //bottom (single line aligment)
+                    }
+                    else if (p.NumberOfLines > 1)
+                    {
+                        line = "79%"; //bottom (multiple line aligment) TODO: Make a smart 1..x lines auto aligment calculator.
+                    }
+                }
 
+
+                if (!string.IsNullOrEmpty(align))
+                {
+                    positionInfo = " align:" + align;
+                }
                 if (!string.IsNullOrEmpty(position))
                 {
-                    positionInfo = " position:" + position;
+                    if (positionInfo == null)
+                        positionInfo = " position:" + position;
+                    else
+                        positionInfo = positionInfo += " position:" + position;
                 }
                 if (!string.IsNullOrEmpty(line))
                 {
@@ -171,8 +197,10 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
             var positionInfo = string.Empty;
             bool hAlignLeft = false;
             bool hAlignRight = false;
+            bool hAlignCenter = false;
             bool vAlignTop = false;
             bool vAlignMiddle = false;
+            bool vAlignBottom = false;
 
             if (!string.IsNullOrEmpty(pos) && pos.EndsWith('%'))
             {
@@ -182,6 +210,10 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
                     if (number < 25)
                     {
                         hAlignLeft = true;
+                    }
+                    else if (number >= 25 && number <= 75)
+                    {
+                        hAlignCenter = true;
                     }
                     else if (number > 75)
                     {
@@ -202,10 +234,15 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
                         {
                             vAlignTop = true;
                         }
-                        else if (number < 75)
+                        else if (number >= 25 && number <= 75)
                         {
                             vAlignMiddle = true;
                         }
+                        else if (number > 75)
+                        {
+                            vAlignBottom = true;
+                        }
+
                     }
                 }
                 else
@@ -235,7 +272,10 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
                 {
                     return "{\\an4}";
                 }
-                return "{\\an1}";
+                if (vAlignBottom)
+                {
+                    return "{\\an1}";
+                }
             }
             else if (hAlignRight)
             {
@@ -247,7 +287,25 @@ namespace Nikse.SubtitleEdit.Core.SubtitleFormats
                 {
                     return "{\\an6}";
                 }
-                return "{\\an3}";
+                if (vAlignBottom)
+                {
+                    return "{\\an3}";
+                }
+            }
+            else if (hAlignCenter)
+            {
+                if (vAlignTop)
+                {
+                    return "{\\an8}";
+                }
+                if (vAlignMiddle)
+                {
+                    return "{\\an4}";
+                }
+                if (vAlignBottom)
+                {
+                    return "{\\an2}";
+                }
             }
             else if (vAlignTop)
             {
